@@ -152,7 +152,7 @@
 		"socket.io-client": "^2.2.0",
 		"stripe": "^7.0.0",
 		"subscriptions-transport-ws": "^0.9.16",
-		"swiper": "^4.5.0",
+		"swiper": "^6.5.1",
 		"tslib": "^1.10.0",
 		"uglify-js": "^3.6.0",
 		"uuid": "^3.3.2",

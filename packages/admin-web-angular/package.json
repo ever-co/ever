@@ -150,7 +150,7 @@
 		"socket.io-client": "^2.2.0",
 		"stripe": "^7.0.0",
 		"subscriptions-transport-ws": "^0.9.16",
-		"swiper": "^5.2.1",
+		"swiper": "^6.5.1",
 		"tinymce": "^5.0.4",
 		"tslib": "^1.10.0",
 		"typeface-exo": "^0.0.61",
