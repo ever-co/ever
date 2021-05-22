@@ -1,9 +1,19 @@
 version: 2.1
 
 orbs:
-    node: circleci/node@3.0.0
+    node: circleci/node@4.1.0
 
 aliases:
+    - &install-node
+      name: Install Node with NPM using NVM
+      command: |
+          echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+          echo ' [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+          nvm install v14
+          nvm alias default v14
+          source $BASH_ENV
+          node --version
+
     - &install-gradle
       name: Install Gradle
       command: |
@@ -12,14 +22,18 @@ aliases:
           echo 'export GRADLE_HOME=/opt/gradle/gradle-4.0.2' >> $BASH_ENV
           echo 'export PATH=$PATH:/opt/gradle/gradle-4.0.2/bin' >> $BASH_ENV
           source $BASH_ENV
+
     - &install-deps
       name: Install Global Dependencies
       command: |
           sudo apt-get update
+          sudo apt install npm
+          sudo apt install build-essential
           sudo npm install --quiet node-gyp -g
           sudo npm install cordova -g
           sudo npm install ionic -g
           sudo npm config set python /usr/bin/python
+
     - &install-chrome
       name: Install Chrome
       command: |
@@ -28,14 +42,7 @@ aliases:
           sudo dpkg -i google-chrome.deb
           sudo sed -i 's|HERE/chrome\"|HERE/chrome\" --disable-setuid-sandbox|g' /opt/google/chrome/google-chrome
           rm google-chrome.deb
-    - &install-gradle
-      name: Install Gradle
-      command: |
-          wget https://services.gradle.org/distributions/gradle-4.0.2-bin.zip -P /tmp
-          sudo unzip -d /opt/gradle /tmp/gradle-*.zip
-          echo 'export GRADLE_HOME=/opt/gradle/gradle-4.0.2' >> $BASH_ENV
-          echo 'export PATH=$PATH:/opt/gradle/gradle-4.0.2/bin' >> $BASH_ENV
-          source $BASH_ENV
+
     - &install-yarn
       name: Install Latest Yarn
       command: |
@@ -45,17 +52,33 @@ aliases:
           rm -rf ~/.yarn
           curl -o- -L https://yarnpkg.com/install.sh | bash
           echo 'export PATH="${PATH}:${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin"' >> $BASH_ENV
+          source $BASH_ENV
+
     - &install-android
       name: Install Android SDK
       command: |
-          sudo apt update
-          sudo apt install openjdk-8-jdk
+          sudo apt-get update
+          sudo apt-get remove openjdk*
+          sudo apt-get clean
+          sudo add-apt-repository -y ppa:openjdk-r/ppa
+          sudo apt-get update
+          sudo apt-get install -y openjdk-8-jdk
+          sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+          which java
+          java -version
+          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java 1 --force
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          echo 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> $BASH_ENV
+          echo 'export PATH=$PATH:$JAVA_HOME/bin' >> $BASH_ENV
+          source $BASH_ENV
           sudo apt install android-sdk
-          export ANDROID_HOME=/usr/lib/android-sdk
+          echo 'export ANDROID_SDK_ROOT="/usr/lib/android-sdk"' >> $BASH_ENV
+          echo 'export ANDROID_HOME="/usr/lib/android-sdk"' >> $BASH_ENV
+          source $BASH_ENV
           wget https://dl.google.com/android/repository/commandlinetools-linux-6609375_latest.zip
           unzip commandlinetools-linux-6609375_latest.zip -d cmdline-tools
           sudo mv cmdline-tools $ANDROID_HOME/
-          export PATH=$ANDROID_HOME/cmdline-tools/tools/bin:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH
+          echo 'export PATH=$ANDROID_HOME/cmdline-tools/tools/bin:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools:$PATH' >> $BASH_ENV
           mkdir ~/.android && echo '### User Sources for Android SDK Manager' > ~/.android/repositories.cfg
           sudo chown -R $(whoami) $ANDROID_HOME
           echo "Installing SDK tools"
@@ -64,7 +87,7 @@ aliases:
           yes | sdkmanager "platform-tools" --sdk_root=${ANDROID_HOME} || true
           echo "Installing SDK platforms;android-28"
           yes | sdkmanager "platforms;android-28" --sdk_root=${ANDROID_HOME} || true
-          echo "Installing SDK platforms;android-29"          
+          echo "Installing SDK platforms;android-29"
           yes | sdkmanager "platforms;android-29" --sdk_root=${ANDROID_HOME} || true
           echo "Installing SDK build-tools;28.0.3"
           yes | sdkmanager "build-tools;28.0.3" --sdk_root=${ANDROID_HOME} || true
@@ -74,6 +97,13 @@ aliases:
           yes | sdkmanager --licenses --sdk_root=${ANDROID_HOME} || true
           echo "Updating SDK and accepting licenses"
           yes | sudo /usr/lib/android-sdk/cmdline-tools/tools/bin/sdkmanager --update --sdk_root=${ANDROID_HOME} || true
+          source $BASH_ENV
+          echo $JAVA_HOME
+          echo $PATH
+          echo $ANDROID_HOME
+          echo $ANDROID_SDK_ROOT
+          which java
+          java -version
 
 defaults: &defaults
     # put here anything which is common between all jobs
@@ -81,6 +111,7 @@ defaults: &defaults
     working_directory: /tmp/workspace
     environment:
         JVM_OPTS: -Xmx4096m
+        JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
         ANDROID_HOME: /usr/lib/android-sdk
 
 jobs:
@@ -88,12 +119,10 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/monorepo-root
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run:
@@ -107,6 +136,7 @@ jobs:
                       - yarn-packages-monorepo-root-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -128,12 +158,10 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/backend/api
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run:
@@ -147,6 +175,7 @@ jobs:
                       - yarn-packages-backend-api-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -170,12 +199,10 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/admin/website-angular
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run:
@@ -189,6 +216,7 @@ jobs:
                       - yarn-packages-admin-website-angular-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -212,16 +240,12 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/carrier/mobile-ionic
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
-            - run:
-                  name: Install Yarn
-                  command: sudo npm install -g yarn --force
+            - run: *install-yarn
             - run: *install-android
             - run: *install-gradle
             - run:
@@ -235,6 +259,7 @@ jobs:
                       - yarn-packages-carrier-mobile-ionic-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -252,9 +277,9 @@ jobs:
             - run:
                   name: Add new android platform
                   command: |
-                      cd packages/carrier-mobile-ionic 
+                      cd packages/carrier-mobile-ionic
                       yarn ionic cordova platform add android@8.0.0 --noresources
-                      ionic config set -g telemetry true                    
+                      ionic config set -g telemetry true
                       # echo y | android update sdk --no-ui --all --filter tools,platform-tools,extra-google-m2repository,extra-google-google_play_services,extra-android-support,extra-android-m2repository,android-25
                       # echo y | android update sdk --no-ui --all --filter build-tools-25.0.0
                   no_output_timeout: 60m
@@ -282,16 +307,12 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/shop/mobile-ionic
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
-            - run:
-                  name: Install Yarn
-                  command: sudo npm install -g yarn --force
+            - run: *install-yarn
             - run: *install-android
             - run: *install-gradle
             - run:
@@ -305,6 +326,7 @@ jobs:
                       - yarn-packages-shop-mobile-ionic-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -324,7 +346,7 @@ jobs:
                   command: |
                       cd packages/shop-mobile-ionic
                       yarn ionic cordova platform add android@8.0.0 --noresources
-                      ionic config set -g telemetry true                    
+                      ionic config set -g telemetry true
                       # echo y | android update sdk --no-ui --all --filter tools,platform-tools,extra-google-m2repository,extra-google-google_play_services,extra-android-support,extra-android-m2repository,android-25
                       # echo y | android update sdk --no-ui --all --filter build-tools-25.0.0
                   no_output_timeout: 60m    
@@ -352,12 +374,10 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/shop/website-angular
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run:
@@ -371,6 +391,7 @@ jobs:
                       - yarn-packages-shop-website-angular-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -394,16 +415,12 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/merchant/tablet-ionic
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
             - checkout
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
-            - run:
-                  name: Install Yarn
-                  command: sudo npm install -g yarn --force
+            - run: *install-yarn
             - run: *install-android
             - run: *install-gradle
             - run:
@@ -417,6 +434,7 @@ jobs:
                       - yarn-packages-merchant-tablet-ionic-{{ checksum "yarn.lock" }}
             - run:
                   name: Run Bootstrap
+                  no_output_timeout: 60m
                   command: yarn bootstrap
                   no_output_timeout: 60m
             - run:
@@ -436,7 +454,7 @@ jobs:
                   command: |
                       cd packages/merchant-tablet-ionic
                       yarn ionic cordova platform add android@8.0.0 --noresources
-                      ionic config set -g telemetry true                    
+                      ionic config set -g telemetry true
                       # echo y | android update sdk --no-ui --all --filter tools,platform-tools,extra-google-m2repository,extra-google-google_play_services,extra-android-support,extra-android-m2repository,android-25
                       # echo y | android update sdk --no-ui --all --filter build-tools-25.0.0
                   no_output_timeout: 60m    
@@ -464,11 +482,9 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/carrier/mobile-ionic
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run: *install-chrome
@@ -496,11 +512,9 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/shop/mobile-ionic
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run: *install-chrome
@@ -528,11 +542,9 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/shop/website-angular
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run: *install-chrome
@@ -560,11 +572,9 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/admin/website-angular
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run: *install-chrome
@@ -592,11 +602,9 @@ jobs:
         <<: *defaults
         working_directory: /tmp/workspace/backend/api
         machine:
-            image: ubuntu-1604:202004-01
+            image: ubuntu-2004:202010-01
         steps:
-            - node/install:
-                  install-yarn: true
-                  node-version: latest
+            - run: *install-node
             - run: *install-deps
             - run: *install-yarn
             - run: *install-chrome

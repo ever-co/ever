@@ -166,9 +166,9 @@
 		"@angular-devkit/build-webpack": "^0.901.1",
 		"@angular-devkit/core": "^9.1.1",
 		"@angular-devkit/schematics": "^9.1.1",
-		"@angular-devkit/build-angular": "~0.900.7",
-		"@angular/cli": "~9.0.4",
-		"@angular/compiler-cli": "~9.0.3",
+		"@angular-devkit/build-angular": "^0.901.1",
+		"@angular/cli": "^9.1.1",
+		"@angular/compiler-cli": "~9.1.1",
 		"@types/node": "^12.11.1",
 		"@types/jasmine": "~3.5.0",
 		"@types/jasminewd2": "~2.0.3",
@@ -192,7 +192,7 @@
 		"typescript": "~3.7.5"
 	},
 	"engines": {
-		"node": ">=10.15.0",
+		"node": ">=14.4.0",
 		"yarn": ">=1.13.0"
 	},
 	"snyk": false

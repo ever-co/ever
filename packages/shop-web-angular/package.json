@@ -161,6 +161,9 @@
 		"ngx-infinite-scroll": "^7.0.1",
 		"ngx-toastr": "^10.0.4",
 		"pm2": "^4.2.1",
+		"http-proxy": "^1.18.1",
+		"follow-redirects": "^1.13.0",
+		"eventemitter3": "^4.0.7",
 		"raw-loader": "1.0.0",
 		"reflect-metadata": "^0.1.13",
 		"rxjs": "^6.5.2",
@@ -200,7 +203,7 @@
 		"typescript": "~3.7.5"
 	},
 	"engines": {
-		"node": ">=10.15.0",
+		"node": ">=14.4.0",
 		"yarn": ">=1.13.0"
 	},
 	"snyk": false
