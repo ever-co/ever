@@ -103,7 +103,7 @@
 		"apollo-link-ws": "^1.0.17",
 		"bootstrap": "^4.3.1",
 		"call-number": "^1.0.1",
-		"cordova-android": "^8.0.0",
+		"cordova-android": "^9.0.0",
 		"cordova-android-support-gradle-release": "^3.0.1",
 		"cordova-browser": "^6.0.0",
 		"cordova-plugin-androidx": "^1.0.2",
