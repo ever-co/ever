@@ -140,7 +140,7 @@
 		"neo-async": "^2.6.1",
 		"node-sass": "^4.11.0",
 		"phonegap-plugin-barcodescanner": "^8.0.1",
-		"pm2": "^4.2.1",
+		"pm2": "^5.0.0",
 		"qrcode": "^1.4.1",
 		"reflect-metadata": "^0.1.13",
 		"rxjs": "^6.5.2",
