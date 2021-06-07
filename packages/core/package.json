@@ -121,7 +121,7 @@
 		"passport-local": "^1.0.0",
 		"passport-url": "^1.0.4",
 		"pem": "^1.14.2",
-		"pm2": "^4.2.1",
+		"pm2": "^5.0.0",
 		"redis": "^2.8.0",
 		"reflect-metadata": "^0.1.13",
 		"request": "^2.88.0",
