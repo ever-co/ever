@@ -151,7 +151,7 @@
 		"save": "^2.3.3",
 		"socket.io-client": "^2.2.0",
 		"stripe": "^7.0.0",
-		"subscriptions-transport-ws": "^0.9.16",
+		"subscriptions-transport-ws": "^0.9.19",
 		"swiper": "^4.5.0",
 		"tslib": "^1.10.0",
 		"uglify-js": "^3.6.0",
