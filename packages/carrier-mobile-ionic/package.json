@@ -149,7 +149,7 @@
 		"mquery": "^3.2.0",
 		"mx.ferreyra.callnumber": "0.0.2",
 		"neo-async": "^2.6.1",
-		"node-sass": "^4.11.0",
+		"node-sass": "^6.0.1",
 		"phonegap-plugin-barcodescanner": "^8.0.1",
 		"pm2": "^4.2.1",
 		"qrcode": "^1.4.1",
